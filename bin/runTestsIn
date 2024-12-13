@@ -1,0 +1,33 @@
+#!/bin/bash
+shopt -qs extglob
+
+printUsage()
+{
+    cat <<HELPTEXT
+Run any tests found in the given DIR.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" 'DIR [-?|-h|--help]'
+}
+
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+if [ $# -ne 1 ]; then
+    printUsage "$0" >&2
+    exit 2
+fi
+testDirspec="${1:?}"; shift
+testDirspec="${testDirspec%/}/"
+testSubject="${testDirspec//@(tests\/|\/tests)/}"
+testSubject="${testSubject%/}"
+
+if hasMatchingFile '*.bats' "$testDirspec"; then
+    printf '\nTesting %s with Bats:\n' "$testSubject"
+    bats -r "$testDirspec" || exit $?
+fi
+
+if hasMatchingFile 'test*.py' "${testDirspec}/.."; then
+    printf '\nTesting %s with Python:\n' "$testSubject"
+    python3 -m unittest discover --verbose --start-directory "${testDirspec}/.." || exit $?
+fi

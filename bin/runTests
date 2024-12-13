@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec eachComponentDo --what Testing --command runTestsIn "$@"

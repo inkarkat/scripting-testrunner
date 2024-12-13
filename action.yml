@@ -1,0 +1,20 @@
+name: Run tests for scripting projects
+description: |
+  This action detects automated tests for some common scripting language test frameworks and runs them.
+runs:
+  using: composite
+  steps:
+    - name: Checkout git-extensions
+      uses: actions/checkout@v4
+      with:
+        repository: inkarkat/shell-filesystem
+        path: shell-filesystem
+    - name: Run scripting tests
+      run: |
+        for dependencyProject in shell-filesystem
+        do
+          PATH="${GITHUB_WORKSPACE}/${dependencyProject}/bin:${PATH}"
+        done
+        export PATH="${PWD}/bin:${GITHUB_ACTION_PATH}/bin:${PATH}"
+        runTests "${PWD}/tests"/*
+      shell: bash
