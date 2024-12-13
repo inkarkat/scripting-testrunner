@@ -16,5 +16,9 @@ runs:
           PATH="${GITHUB_WORKSPACE}/${dependencyProject}/bin:${PATH}"
         done
         export PATH="${PWD}/bin:${GITHUB_ACTION_PATH}/bin:${PATH}"
-        runTests "${PWD}/tests"/*
+        RUNTESTSIN_RUN_PREFIX='::group::' \
+        RUNTESTSIN_RUN_SUFFIX='::endgroup::' \
+        EACHCOMPONENTDO_SETUP_PREFIX='::group::' \
+        EACHCOMPONENTDO_SETUP_SUFFIX='::endgroup::' \
+          runTests "${PWD}/tests"/*
       shell: bash

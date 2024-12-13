@@ -47,8 +47,9 @@ setupPythonVirtualEnv() {
     local pyvenvDirspec="${projectDirspec}/.venv"
     local newEnv=
     if [ -z "$VIRTUAL_ENV" -a ! -d "$pyvenvDirspec" ]; then
-	printf '\nSetting up Python virtual environment at %s:\n' "$pyvenvDirspec"
+	printf '\n%sSetting up Python virtual environment at %s:\n' "$EACHCOMPONENTDO_SETUP_PREFIX" "$pyvenvDirspec"
 	python3 -m venv "$pyvenvDirspec" || return $?
+	[ -z "$EACHCOMPONENTDO_SETUP_SUFFIX" ] || printf '%s\n' "$EACHCOMPONENTDO_SETUP_SUFFIX"
 	newEnv=t
     fi
     if [ -z "$VIRTUAL_ENV" ]; then
@@ -57,9 +58,10 @@ setupPythonVirtualEnv() {
     [ -n "$VIRTUAL_ENV" ] || return 1
 
     if [ "$newEnv" ]; then
-	echo "Installing requirements"
+	printf '\n%sInstalling requirements for %s:\n' "$EACHCOMPONENTDO_SETUP_PREFIX" "$(basename -- "$projectDirspec")"
 	local requirementsFilespec="${projectDirspec}/requirements.txt"
 	pip3 install --requirement "$requirementsFilespec" || return $?
+	[ -z "$EACHCOMPONENTDO_SETUP_SUFFIX" ] || printf '%s\n' "$EACHCOMPONENTDO_SETUP_SUFFIX"
     fi
 }
 
