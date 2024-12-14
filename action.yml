@@ -8,13 +8,10 @@ runs:
       uses: actions/checkout@v4
       with:
         repository: inkarkat/shell-filesystem
-        path: shell-filesystem
+        path: .scripting-testrunner/shell-filesystem
     - name: Run scripting tests
       run: |
-        for dependencyProject in shell-filesystem
-        do
-          PATH="${GITHUB_WORKSPACE}/${dependencyProject}/bin:${PATH}"
-        done
+        cp --force -- "${GITHUB_WORKSPACE}/.scripting-testrunner/shell-filesystem/bin/hasMatchingFile" "${GITHUB_ACTION_PATH}/bin"
         export PATH="${PWD}/bin:${GITHUB_ACTION_PATH}/bin:${PATH}"
         RUNTESTSIN_RUN_PREFIX='::group::' \
         RUNTESTSIN_RUN_SUFFIX='::endgroup::' \
