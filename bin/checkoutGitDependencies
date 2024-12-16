@@ -4,7 +4,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--include-optional] [-r|--recursive MARKDOWN-FILE [-r ...]] [--] MARKDOWN-FILE [...] [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--include-optional] [-r|--recursive MARKDOWN-FILE [-r ...]] [--recurse-submodules] [--] MARKDOWN-FILE [...] [-?|-h|--help]'
 }
 printUsage()
 {
@@ -31,10 +31,13 @@ HELPDESCRIPTION
 			copy) MARKDOWN-FILE(s) of cloned dependencies and check
 			those out (also in the current directory), too. (Unless
 			they already exist.)
+    --recurse-submodules
+			Check out submodules of dependencies, too.
 HELPTEXT
 }
 
 typeset -a extractGitDependenciesArgs=()
+typeset -a gitCloneArgs=()
 recursiveMarkdownFiles=()
 while [ $# -ne 0 ]
 do
@@ -43,6 +46,8 @@ do
 	--recursive|-r)	shift; recursiveMarkdownFiles+=("${1:?}"); shift;;
 	--include-optional)
 			extractGitDependenciesArgs+=("$1"); shift;;
+	--recurse-submodules)
+			gitCloneArgs+=("$1"); shift;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
@@ -64,7 +69,7 @@ parseAndCheckout()
 	fi
 
 	printf 'Cloning dependency %s\n' "$dependencyUrl"
-	git clone --depth 1 "$dependencyUrl" "$wcName" || return $?
+	git clone "${gitCloneArgs[@]}" --depth 1 "$dependencyUrl" "$wcName" || return $?
 	parseAndCheckout "${recursiveMarkdownFiles[@]/#/./$wcName/}"
     done < <("${GITHUB_ACTION_PATH}/bin/extractGitDependencies" "${extractGitDependenciesArgs[@]}" "$@")
 }

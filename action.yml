@@ -6,6 +6,10 @@ inputs:
     description: Flag whether to also clone and include in PATH dependencies marked as optional.
     required: false
     default: false
+  submodules:
+    description: Flag whether to check out submodules.
+    required: false
+    default: false
 runs:
   using: composite
   steps:
@@ -17,11 +21,12 @@ runs:
     - name: Checkout dependencies
       env:
         INCLUDE_OPTIONAL_DEPENDENCIES: ${{ fromJSON(inputs.include-optional-dependencies) && 't' || '' }}
+        INCLUDE_SUBMODULES: ${{ fromJSON(inputs.submodules) && 't' || '' }}
       run: |
         export PATH="${GITHUB_ACTION_PATH}/bin:${PATH}"
         mkdir --parents -- "${GITHUB_WORKSPACE}/dependencies"
         cd "${GITHUB_WORKSPACE}/dependencies"
-        checkoutGitDependencies ${INCLUDE_OPTIONAL_DEPENDENCIES:+--include-optional} --recursive README.md -- "${GITHUB_WORKSPACE}/README.md"
+        checkoutGitDependencies ${INCLUDE_OPTIONAL_DEPENDENCIES:+--include-optional} ${INCLUDE_SUBMODULES:+--recurse-submodules} --recursive README.md -- "${GITHUB_WORKSPACE}/README.md"
       shell: bash
     - name: Run scripting tests
       run: |
