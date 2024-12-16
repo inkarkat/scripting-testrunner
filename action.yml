@@ -11,13 +11,10 @@ runs:
         path: .scripting-testrunner/shell-filesystem
     - name: Checkout dependencies
       run: |
+        export PATH="${GITHUB_ACTION_PATH}/bin:${PATH}"
         mkdir --parents -- "${GITHUB_WORKSPACE}/dependencies"
         cd "${GITHUB_WORKSPACE}/dependencies"
-        while IFS=$'\n' read -r dependencyUrl
-        do
-          printf 'Cloning dependency %s\n' "$dependencyUrl"
-          git clone --depth 1 "$dependencyUrl"
-        done < <("${GITHUB_ACTION_PATH}/bin/extractGitDependencies" "${GITHUB_WORKSPACE}/README.md")
+        checkoutGitDependencies --recursive README.md -- "${GITHUB_WORKSPACE}/README.md"
       shell: bash
     - name: Run scripting tests
       run: |
@@ -27,7 +24,7 @@ runs:
           dependencyBin="${dependencyPath}/bin"
           if [ -d "$dependencyBin" ]; then
             PATH="${dependencyBin}:${PATH}"
-            printf 'Added dependency %s\n' "$dependencyBin"
+            printf 'Add dependency %s\n' "$dependencyBin"
           fi
         done
         export PATH="${PWD}/bin:${GITHUB_ACTION_PATH}/bin:${PATH}"

@@ -1,0 +1,68 @@
+#!/bin/bash
+
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-r|--recursive MARKDOWN-FILE [-r ...]] [--] MARKDOWN-FILE [...] [-?|-h|--help]'
+}
+printUsage()
+{
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
+Extract dependencies listed in the passed MARKDOWN-FILE(s) and check them out
+into the current directory.
+HELPDESCRIPTION
+    echo
+    printShortUsage "$1"
+    echo
+    cat <<HELPTEXT
+    --recursive|-r MARKDOWN-FILE
+			Look for dependencies in the (relative to the working
+			copy) MARKDOWN-FILE(s) of cloned dependencies and check
+			those out (also in the current directory), too. (Unless
+			they already exist.)
+HELPTEXT
+}
+
+recursiveMarkdownFiles=()
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+	--recursive|-r)	shift; recursiveMarkdownFiles+=("${1:?}"); shift;;
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
+if [ $# -eq 0 ]; then
+    printUsage "$0" >&2
+    exit 2
+fi
+
+parseAndCheckout()
+{
+    while IFS=$'\n' read -r dependencyUrl
+    do
+	wcName="${dependencyUrl%.git}"; wcName="${wcName##*/}"
+	if [ -d "$wcName" ]; then
+	    printf 'Dependency %s already exists; skipping.\n' "$wcName"
+	    continue
+	fi
+
+	printf 'Cloning dependency %s\n' "$dependencyUrl"
+	git clone --depth 1 "$dependencyUrl" "$wcName" || return $?
+	parseAndCheckout "${recursiveMarkdownFiles[@]/#/./$wcName/}"
+    done < <("${GITHUB_ACTION_PATH}/bin/extractGitDependencies" "$@")
+}
+
+parseAndCheckout "$@"
