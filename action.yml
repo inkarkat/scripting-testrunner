@@ -12,6 +12,14 @@ runs:
     - name: Run scripting tests
       run: |
         cp --force -- "${GITHUB_WORKSPACE}/.scripting-testrunner/shell-filesystem/bin/hasMatchingFile" "${GITHUB_ACTION_PATH}/bin"
+        for dependencyPath in "${GITHUB_WORKSPACE}/dependencies"/*
+        do
+          dependencyBin="${dependencyPath}/bin"
+          if [ -d "$dependencyBin" ]; then
+            PATH="${dependencyBin}:${PATH}"
+            printf 'Added dependency %s\n' "$dependencyBin"
+          fi
+        done
         export PATH="${PWD}/bin:${GITHUB_ACTION_PATH}/bin:${PATH}"
         RUNTESTSIN_RUN_PREFIX='::group::' \
         RUNTESTSIN_RUN_SUFFIX='::endgroup::' \
