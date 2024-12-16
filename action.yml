@@ -9,7 +9,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Checkout git-extensions
+    - name: Checkout scripting-testrunner dependencies
       uses: actions/checkout@v4
       with:
         repository: inkarkat/shell-filesystem
