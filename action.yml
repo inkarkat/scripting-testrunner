@@ -9,6 +9,16 @@ runs:
       with:
         repository: inkarkat/shell-filesystem
         path: .scripting-testrunner/shell-filesystem
+    - name: Checkout dependencies
+      run: |
+        mkdir --parents -- "${GITHUB_WORKSPACE}/dependencies"
+        cd "${GITHUB_WORKSPACE}/dependencies"
+        while IFS=$'\n' read -r dependencyUrl
+        do
+          printf 'Cloning dependency %s\n' "$dependencyUrl"
+          git clone --depth 1 "$dependencyUrl"
+        done < <("${GITHUB_ACTION_PATH}/bin/extractGitDependencies" "${GITHUB_WORKSPACE}/README.md")
+      shell: bash
     - name: Run scripting tests
       run: |
         cp --force -- "${GITHUB_WORKSPACE}/.scripting-testrunner/shell-filesystem/bin/hasMatchingFile" "${GITHUB_ACTION_PATH}/bin"
