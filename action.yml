@@ -1,6 +1,11 @@
 name: Run tests for scripting projects
 description: |
   This action detects automated tests for some common scripting language test frameworks and runs them.
+inputs:
+  include-optional-dependencies:
+    description: Flag whether to also clone and include in PATH dependencies marked as optional.
+    required: false
+    default: false
 runs:
   using: composite
   steps:
@@ -10,11 +15,13 @@ runs:
         repository: inkarkat/shell-filesystem
         path: .scripting-testrunner/shell-filesystem
     - name: Checkout dependencies
+      env:
+        INCLUDE_OPTIONAL_DEPENDENCIES: ${{ fromJSON(inputs.include-optional-dependencies) && 't' || '' }}
       run: |
         export PATH="${GITHUB_ACTION_PATH}/bin:${PATH}"
         mkdir --parents -- "${GITHUB_WORKSPACE}/dependencies"
         cd "${GITHUB_WORKSPACE}/dependencies"
-        checkoutGitDependencies --recursive README.md -- "${GITHUB_WORKSPACE}/README.md"
+        checkoutGitDependencies ${INCLUDE_OPTIONAL_DEPENDENCIES:+--include-optional} --recursive README.md -- "${GITHUB_WORKSPACE}/README.md"
       shell: bash
     - name: Run scripting tests
       run: |
