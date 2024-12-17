@@ -30,6 +30,7 @@ runs:
       shell: bash
     - name: Run scripting tests
       run: |
+        shopt -qs nullglob
         cp --force -- "${GITHUB_WORKSPACE}/.scripting-testrunner/shell-filesystem/bin/hasMatchingFile" "${GITHUB_ACTION_PATH}/bin"
         for dependencyPath in "${GITHUB_WORKSPACE}/dependencies"/*
         do
@@ -39,7 +40,7 @@ runs:
             printf 'Add dependency %s\n' "$dependencyBin"
           fi
         done
-        export PATH="${PWD}/bin:${GITHUB_ACTION_PATH}/bin:${PATH}"
+        export PATH="${PWD}/bin:${GITHUB_ACTION_PATH}/bin:${PATH}"; printf 'PATH=%s\n' "$PATH"
         RUNTESTSIN_RUN_PREFIX='::group::' \
         RUNTESTSIN_RUN_SUFFIX='::endgroup::' \
         EACHCOMPONENTDO_SETUP_PREFIX='::group::' \
