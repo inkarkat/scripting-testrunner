@@ -19,6 +19,7 @@ The action assumes that the scripts-under-test are located in the `./bin` subdir
   uses: inkarkat/scripting-testrunner@master
   with:
     include-optional-dependencies: false
+    settings: LC_ALL=C TZ=Etc/UTC
     submodules: false
 ```
 The project's `README.md` has dependencies listed like this:

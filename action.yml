@@ -6,6 +6,10 @@ inputs:
     description: Flag whether to also clone and include in PATH dependencies marked as optional.
     required: false
     default: false
+  settings:
+    description: Additional environment settings (in the form VAR=VALUE) to pass to the test runner.
+    required: false
+    default: ''
   submodules:
     description: Flag whether to check out submodules.
     required: false
@@ -32,6 +36,7 @@ runs:
       run: |
         shopt -qs nullglob
         cp --force -- "${GITHUB_WORKSPACE}/.scripting-testrunner/shell-filesystem/bin/hasMatchingFile" "${GITHUB_ACTION_PATH}/bin"
+
         for dependencyPath in "${GITHUB_WORKSPACE}/dependencies"/*
         do
           dependencyBin="${dependencyPath}/bin"
@@ -41,9 +46,11 @@ runs:
           fi
         done
         export PATH="${PWD}/bin:${GITHUB_ACTION_PATH}/bin:${PATH}"; printf 'PATH=%s\n' "$PATH"
+
         RUNTESTSIN_RUN_PREFIX='::group::' \
         RUNTESTSIN_RUN_SUFFIX='::endgroup::' \
         EACHCOMPONENTDO_SETUP_PREFIX='::group::' \
         EACHCOMPONENTDO_SETUP_SUFFIX='::endgroup::' \
+        ${{ inputs.settings }} \
           runTests "${PWD}/tests"/*
       shell: bash
