@@ -16,4 +16,13 @@ The action assumes that the scripts-under-test are located in the `./bin` subdir
   uses: actions/checkout@v4
 - name: Run tests
   uses: inkarkat/scripting-testrunner@master
+  with:
+    include-optional-dependencies: false
+    submodules: false
+```
+The project's `README.md` has dependencies listed like this:
+```markdown
+### Dependencies
+* [inkarkat/shell-basics](https://github.com/inkarkat/shell-basics)
+* [inkarkat/shell-tools](https://github.com/inkarkat/shell-tools) (optional)
 ```
