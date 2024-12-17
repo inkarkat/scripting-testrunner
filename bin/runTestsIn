@@ -18,13 +18,14 @@ if [ $# -ne 1 ]; then
     exit 2
 fi
 testDirspec="${1:?}"; shift
-testDirspec="${testDirspec%/}/"
+testDirspec="${testDirspec%/}"
+testSubject="${testDirspec}/"
 testSubject="${testDirspec//@(tests\/|\/tests)/}"
 testSubject="${testSubject%/}"
 
-if hasMatchingFile '*.bats' "$testDirspec"; then
+if hasMatchingFile '*.bats' "${testDirspec}/"; then
     printf '\n%sTesting %s with Bats:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject"
-    bats -r "$testDirspec" || exit $?
+    bats -r "${testDirspec}/" || exit $?
     [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
 fi
 
