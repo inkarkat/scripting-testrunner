@@ -8,7 +8,7 @@ Supported languages / test frameworks:
 * Python 3 / [unittest](https://docs.python.org/dev/library/unittest.html)
 * Perl / `prove`
 
-The action assumes that the scripts-under-test are located in the `./bin` subdirectory, and tests for each component are in `./tests/<component>` directories.
+The action assumes that the scripts-under-test are located in the `./bin` subdirectory, and tests for each component are in `./tests/<component>` directories, or are triggered from the repository root.
 
 # Usage
 

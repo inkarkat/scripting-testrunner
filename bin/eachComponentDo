@@ -7,10 +7,10 @@ shopt -qs extglob nullglob
 printUsage()
 {
     cat <<HELPTEXT
-Execute COMMAND on each COMPONENT-TESTDIR, which is appended to COMMAND.
+Execute COMMAND on each COMPONENT-DIR, which is appended to COMMAND.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" "-c|--command \"COMMANDLINE\" [-c ...] | --exec SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...] | [--] COMPONENT-TESTDIR [...] [-?|-h|--help]"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "-c|--command \"COMMANDLINE\" [-c ...] | --exec SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...] | [--] COMPONENT-DIR [...] [-?|-h|--help]"
 }
 
 what='Listing'
@@ -71,8 +71,8 @@ for dirspec
 do
     dirspec="${dirspec%/}"
     ( # Note: Execute in subshell so that different Python virtual environments don't influence each other and we can skip the deactivation.
-	if hasMatchingFile 'requirements.txt' "${dirspec}/.."; then
-	    setupPythonVirtualEnv "${dirspec}/.."
+	if hasMatchingFile 'requirements.txt' "$dirspec"; then
+	    setupPythonVirtualEnv "$dirspec"
 	fi
 
 	eval "${commands:-echo}" "$dirspec"

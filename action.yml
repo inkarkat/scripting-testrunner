@@ -52,5 +52,5 @@ runs:
         EACHCOMPONENTDO_SETUP_PREFIX='::group::' \
         EACHCOMPONENTDO_SETUP_SUFFIX='::endgroup::' \
         ${{ inputs.settings }} \
-          runTests "${PWD}/tests"/*
+          runTests "$PWD" "${PWD}/tests"/*
       shell: bash
