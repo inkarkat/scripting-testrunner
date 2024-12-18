@@ -41,3 +41,11 @@ if [ -d "${testDirspec}/t" ]; then
     prove -I. || exit $?
     [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
 fi
+
+if [ -r "${testDirspec}/Makefile" ] \
+    && { make --question test >/dev/null 2>&1; [ $? -ne 2 ]; }	# inlined "makeHasTarget test"
+then
+    printf '\n%sTesting %s with Make:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject"
+    make --directory "${testDirspec}/" test || exit $?
+    [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
+fi
