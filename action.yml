@@ -46,6 +46,8 @@ runs:
           fi
         done
         export PATH="${PWD}/bin:${GITHUB_ACTION_PATH}/bin:${PATH}"; printf 'PATH=%s\n' "$PATH"
+        [ -z "${XDG_RUNTIME_DIR+t}" ] && [ -d "/run/user/${UID}" ] \
+          && export XDG_RUNTIME_DIR="/run/user/${UID}"
 
         RUNTESTSIN_RUN_PREFIX='::group::' \
         RUNTESTSIN_RUN_SUFFIX='::endgroup::' \
