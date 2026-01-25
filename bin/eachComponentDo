@@ -41,6 +41,12 @@ do
 	*)		break;;
     esac
 done
+if [ $# -eq 0 ]; then
+    echo 'ERROR: No COMPONENT-DIR(s) passed.'
+    echo
+    printUsage "$0"
+    exit 2
+fi >&2
 
 setupPythonVirtualEnv() {
     local projectDirspec="${1:?}"; shift
