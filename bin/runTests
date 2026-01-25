@@ -1,18 +1,26 @@
 #!/bin/bash
+shopt -qs nullglob
 
 : ${EACHCOMPONENTDO_EXEC_END=;}
 
 printUsage()
 {
     cat <<HELPTEXT
-Run any tests found in each COMPONENT-DIR, which is appended to COMMAND.
+Run all tests in tests/*/ / any tests found in each COMPONENT-DIR.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" "[-c|--command \"ADDITIONAL-COMMANDLINE\" [-c ...] | --exec ADDITIONAL-SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...]] [--] COMPONENT-DIR [...] [-?|-h|--help]"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "[-c|--command \"ADDITIONAL-COMMANDLINE\" [-c ...] | --exec ADDITIONAL-SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...]] [--] [COMPONENT-DIR [...]] [-?|-h|--help]"
 }
 
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
+if [ $# -eq 0 ]; then
+    set -- tests/*
+    if [ $# -eq 0 ]; then
+	echo >&2 'ERROR: No tests/COMPONENT-DIR(s) found.'
+	exit 99
+    fi
+fi
 
 exec eachComponentDo --what Testing --command runTestsIn "$@"
