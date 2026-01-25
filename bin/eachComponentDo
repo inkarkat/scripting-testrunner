@@ -10,7 +10,7 @@ printUsage()
 Execute COMMAND on each COMPONENT-DIR, which is appended to COMMAND.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" "-c|--command \"COMMANDLINE\" [-c ...] | --exec SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...] | [--] COMPONENT-DIR [...] [-?|-h|--help]"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "-c|--command \"COMMANDLINE\" [-c ...] | --exec SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...] [--] COMPONENT-DIR [...] [-?|-h|--help]"
 }
 
 what='Listing'
