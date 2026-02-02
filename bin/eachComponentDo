@@ -33,7 +33,7 @@ HELPDESCRIPTION
 HELPTEXT
 }
 
-what='Listing'
+what=''
 isExitOnFailure=
 commands=
 while [ $# -ne 0 ]
@@ -70,6 +70,7 @@ if [ $# -eq 0 ]; then
     printUsage "$0"
     exit 2
 fi >&2
+[ -n "$commands" ] && : ${what:=Command execution} && : ${what:=Listing}
 
 setupPythonVirtualEnv() {
     local projectDirspec="${1:?}"; shift
