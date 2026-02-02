@@ -73,15 +73,21 @@ setupPythonVirtualEnv() {
 
 componentsPlural=s; [ $# -eq 1 ] && componentsPlural=
 printf '%s %d component%s.\n' "$what" "$#" "$componentsPlural"
+let componentCnt=0
 for dirspec
 do
     dirspec="${dirspec%/}"
+    let componentCnt+=1
     ( # Note: Execute in subshell so that different Python virtual environments don't influence each other and we can skip the deactivation.
 	if hasMatchingFile 'requirements.txt' "$dirspec"; then
 	    setupPythonVirtualEnv "$dirspec"
 	fi
 
 	eval "${commands:-echo}" "$dirspec"
-    ) || exit $?
+    ) || {
+	status=$?
+	printf '\n%s for %d component%s failed at component %d: %s\n' "$what" "$#" "$componentsPlural" $componentCnt "$dirspec"
+	exit $status
+    }
 done
 printf '\n%s for %s%d component%s done.\n' "$what" "${componentsPlural:+all }" "$#" "$componentsPlural"
