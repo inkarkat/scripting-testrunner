@@ -9,7 +9,7 @@ printUsage()
 Run all tests in tests/*/ / any tests found in each COMPONENT-DIR.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" "[-c|--command \"ADDITIONAL-COMMANDLINE\" [-c ...] | --exec ADDITIONAL-SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...]] [--] [COMPONENT-DIR [...]] [-?|-h|--help]"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "[--exit-on-failure] [-c|--command \"ADDITIONAL-COMMANDLINE\" [-c ...] | --exec ADDITIONAL-SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...]] [--] [COMPONENT-DIR [...]] [-?|-h|--help]"
 }
 
 case "$1" in

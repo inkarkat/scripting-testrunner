@@ -4,22 +4,45 @@ shopt -qs extglob nullglob
 : ${EACHCOMPONENTDO_COMMAND_JOINER=;}
 : ${EACHCOMPONENTDO_EXEC_END=;}
 
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: %q %s\n' "$(basename "$1")" "[--what WHAT] [--exit-on-failure] -c|--command \"COMMANDLINE\" [-c ...] | --exec SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...] [--] COMPONENT-DIR [...] [-?|-h|--help]"
+}
 printUsage()
 {
-    cat <<HELPTEXT
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
 Execute COMMAND on each COMPONENT-DIR, which is appended to COMMAND.
-HELPTEXT
+HELPDESCRIPTION
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" "-c|--command \"COMMANDLINE\" [-c ...] | --exec SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...] [--] COMPONENT-DIR [...] [-?|-h|--help]"
+    printShortUsage "$1"
+    echo
+    cat <<HELPTEXT
+    --what WHAT		Description for COMMAND's actions.
+    --exit-on-failure   Stop execution if COMMAND is unsuccessful (like set -e).
+HELPTEXT
 }
 
 what='Listing'
+isExitOnFailure=
 commands=
 while [ $# -ne 0 ]
 do
     case "$1" in
-	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
 	--what)         shift; what="${1:?}"; shift;;
+	--exit-on-failure)
+			shift; isExitOnFailure=t;;
 	--command|-c)	shift; commands+="${commands:+ $EACHCOMPONENTDO_COMMAND_JOINER }$1"; shift;;
 	--exec)		shift
 			cmd=
@@ -74,6 +97,8 @@ setupPythonVirtualEnv() {
 componentsPlural=s; [ $# -eq 1 ] && componentsPlural=
 printf '%s %d component%s.\n' "$what" "$#" "$componentsPlural"
 let componentCnt=0
+let failCnt=0
+status=
 for dirspec
 do
     dirspec="${dirspec%/}"
@@ -84,10 +109,21 @@ do
 	fi
 
 	eval "${commands:-echo}" "$dirspec"
-    ) || {
-	status=$?
-	printf '\n%s for %d component%s failed at component %d: %s\n' "$what" "$#" "$componentsPlural" $componentCnt "$dirspec"
-	exit $status
+    ) && : ${status:=0} || {
+	exitStatus=$?
+	let failCnt+=1
+	if [ "$isExitOnFailure" ]; then
+	    printf '\n%s for %d component%s failed at component %d: %s\n' "$what" "$#" "$componentsPlural" $componentCnt "$dirspec"
+	    exit $exitStatus
+	elif [ $exitStatus -gt ${status:-0} ]; then
+	    status=$exitStatus
+	fi
     }
 done
-printf '\n%s for %s%d component%s done.\n' "$what" "${componentsPlural:+all }" "$#" "$componentsPlural"
+if [ $failCnt -gt 0 ]; then
+    failCntPlural=s; [ $failCnt -eq 1 ] && failCntPlural=
+    printf '\n%s for %s%d component%s done; %d component%s failed.\n' "$what" "${componentsPlural:+all }" "$#" "$componentsPlural" $failCnt "$failCntPlural"
+else
+    printf '\n%s for %s%d component%s done.\n' "$what" "${componentsPlural:+all }" "$#" "$componentsPlural"
+fi
+exit ${status:-99}
