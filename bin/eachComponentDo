@@ -104,6 +104,8 @@ for dirspec
 do
     dirspec="${dirspec%/}"
     let componentCnt+=1
+    export COMPONENT_COUNT="$componentCnt of $#"
+
     ( # Note: Execute in subshell so that different Python virtual environments don't influence each other and we can skip the deactivation.
 	if hasMatchingFile 'requirements.txt' "$dirspec"; then
 	    setupPythonVirtualEnv "$dirspec"
