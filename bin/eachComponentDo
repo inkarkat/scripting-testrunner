@@ -8,7 +8,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" "[--what WHAT] [--exit-on-failure] -c|--command \"COMMANDLINE\" [-c ...] | --exec SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...] [--] COMPONENT-DIR [...] [-?|-h|--help]"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "[--what WHAT] [--exit-on-failure] [--status-99-is-noop] -c|--command \"COMMANDLINE\" [-c ...] | --exec SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...] [--] COMPONENT-DIR [...] [-?|-h|--help]"
 }
 printUsage()
 {
@@ -30,11 +30,15 @@ HELPDESCRIPTION
     cat <<HELPTEXT
     --what WHAT		Description for COMMAND's actions.
     --exit-on-failure   Stop execution if COMMAND is unsuccessful (like set -e).
+    --status-99-is-noop Exit status 99 from COMMAND signifies no action or
+			inapplicability; that is only returned if all
+			invocations of COMMAND return that.
 HELPTEXT
 }
 
 what=''
 isExitOnFailure=
+isStatus99IsNoop=
 commands=
 while [ $# -ne 0 ]
 do
@@ -43,6 +47,8 @@ do
 	--what)         shift; what="${1:?}"; shift;;
 	--exit-on-failure)
 			shift; isExitOnFailure=t;;
+	--status-99-is-noop)
+			shift; isStatus99IsNoop=t;;
 	--command|-c)	shift; commands+="${commands:+ $EACHCOMPONENTDO_COMMAND_JOINER }$1"; shift;;
 	--exec)		shift
 			cmd=
@@ -115,6 +121,12 @@ do
 	eval "${commands:-echo}" "$dirspec"
     ) && : ${status:=0} || {
 	exitStatus=$?
+	if [ $exitStatus -eq 99 ] && [ "$isStatus99IsNoop" ]; then
+	    let componentCnt-=1
+	    let componentsNum-=1
+	    continue
+	fi
+
 	let failCnt+=1
 	if [ "$isExitOnFailure" ]; then
 	    printf '\n%s for %d component%s failed at component %d: %s\n' "$what" "$componentsNum" "$componentsPlural" $componentCnt "$dirspec"

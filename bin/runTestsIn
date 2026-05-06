@@ -58,5 +58,6 @@ then
 fi
 
 if [ ! "$hasFoundTests" ]; then
-    printf >&2 'No tests found in %s\n' "$testDirspec"
+    printf >&2 'Note: No tests found in %s\n' "$testDirspec"
+    exit 99
 fi
