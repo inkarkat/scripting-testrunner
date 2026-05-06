@@ -25,19 +25,23 @@ testSubject="${testSubject%/}"
 
 componentCount="${COMPONENT_COUNT:+ (}${COMPONENT_COUNT}${COMPONENT_COUNT:+)}"
 
+hasFoundTests=
 if hasMatchingFile '*.bats' "${testDirspec}/"; then
+    hasFoundTests=t
     printf '\n%sTesting %s%s with Bats:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount"
     bats -r "${testDirspec}/" || exit $?
     [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
 fi
 
 if hasMatchingFile 'test*.py' "${testDirspec}/"; then
+    hasFoundTests=t
     printf '\n%sTesting %s%s with Python:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount"
     python3 -m unittest discover --verbose --start-directory "${testDirspec}/" || exit $?
     [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
 fi
 
 if [ -d "${testDirspec}/t" ]; then
+    hasFoundTests=t
     printf '\n%sTesting %s%s with Perl:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount"
     cd "$testDirspec" || exit 3
     prove -I. || exit $?
@@ -47,7 +51,12 @@ fi
 if [ -r "${testDirspec}/Makefile" ] \
     && { make --question test >/dev/null 2>&1; [ $? -ne 2 ]; }	# inlined "makeHasTarget test"
 then
+    hasFoundTests=t
     printf '\n%sTesting %s%s with Make:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount"
     make --directory "${testDirspec}/" test || exit $?
     [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
+fi
+
+if [ ! "$hasFoundTests" ]; then
+    printf >&2 'No tests found in %s\n' "$testDirspec"
 fi
