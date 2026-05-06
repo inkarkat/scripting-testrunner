@@ -8,7 +8,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" "[--what WHAT] [--exit-on-failure] -c|--command \"COMMANDLINE\" [-c ...] | --exec SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...] [--] COMPONENT-DIR [...] [-?|-h|--help]"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "[--what WHAT] [--exit-on-failure] [--status-99-is-noop] -c|--command \"COMMANDLINE\" [-c ...] | --exec SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...] [--] COMPONENT-DIR [...] [-?|-h|--help]"
 }
 printUsage()
 {
@@ -30,11 +30,15 @@ HELPDESCRIPTION
     cat <<HELPTEXT
     --what WHAT		Description for COMMAND's actions.
     --exit-on-failure   Stop execution if COMMAND is unsuccessful (like set -e).
+    --status-99-is-noop Exit status 99 from COMMAND signifies no action or
+			inapplicability; that is only returned if all
+			invocations of COMMAND return that.
 HELPTEXT
 }
 
 what=''
 isExitOnFailure=
+isStatus99IsNoop=
 commands=
 while [ $# -ne 0 ]
 do
@@ -43,6 +47,8 @@ do
 	--what)         shift; what="${1:?}"; shift;;
 	--exit-on-failure)
 			shift; isExitOnFailure=t;;
+	--status-99-is-noop)
+			shift; isStatus99IsNoop=t;;
 	--command|-c)	shift; commands+="${commands:+ $EACHCOMPONENTDO_COMMAND_JOINER }$1"; shift;;
 	--exec)		shift
 			cmd=
@@ -95,8 +101,9 @@ setupPythonVirtualEnv() {
     fi
 }
 
-componentsPlural=s; [ $# -eq 1 ] && componentsPlural=
-printf '%s %d component%s.\n' "$what" "$#" "$componentsPlural"
+componentsNum=$#
+componentsPlural=s; [ $componentsNum -eq 1 ] && componentsPlural=
+printf '%s %d potential component%s.\n' "$what" "$componentsNum" "$componentsPlural"
 let componentCnt=0
 let failCnt=0
 status=
@@ -104,7 +111,7 @@ for dirspec
 do
     dirspec="${dirspec%/}"
     let componentCnt+=1
-    export COMPONENT_COUNT="$componentCnt of $#"
+    export COMPONENT_COUNT="$componentCnt of $componentsNum"
 
     ( # Note: Execute in subshell so that different Python virtual environments don't influence each other and we can skip the deactivation.
 	if hasMatchingFile 'requirements.txt' "$dirspec"; then
@@ -114,19 +121,27 @@ do
 	eval "${commands:-echo}" "$dirspec"
     ) && : ${status:=0} || {
 	exitStatus=$?
+	if [ $exitStatus -eq 99 ] && [ "$isStatus99IsNoop" ]; then
+	    let componentCnt-=1
+	    let componentsNum-=1
+	    continue
+	fi
+
 	let failCnt+=1
 	if [ "$isExitOnFailure" ]; then
-	    printf '\n%s for %d component%s failed at component %d: %s\n' "$what" "$#" "$componentsPlural" $componentCnt "$dirspec"
+	    printf '\n%s for %d component%s failed at component %d: %s\n' "$what" "$componentsNum" "$componentsPlural" $componentCnt "$dirspec"
 	    exit $exitStatus
 	elif [ $exitStatus -gt ${status:-0} ]; then
 	    status=$exitStatus
 	fi
     }
 done
+
+componentsPlural=s; [ $componentsNum -eq 1 ] && componentsPlural=
 if [ $failCnt -gt 0 ]; then
     failCntPlural=s; [ $failCnt -eq 1 ] && failCntPlural=
-    printf '\n%s for %s%d component%s done; %d component%s failed.\n' "$what" "${componentsPlural:+all }" "$#" "$componentsPlural" $failCnt "$failCntPlural"
+    printf '\n%s for %s%d component%s done; %d component%s failed.\n' "$what" "${componentsPlural:+all }" "$componentsNum" "$componentsPlural" $failCnt "$failCntPlural"
 else
-    printf '\n%s for %s%d component%s done.\n' "$what" "${componentsPlural:+all }" "$#" "$componentsPlural"
+    printf '\n%s for %s%d component%s done.\n' "$what" "${componentsPlural:+all }" "$componentsNum" "$componentsPlural"
 fi
 exit ${status:-99}

@@ -34,7 +34,7 @@ runs:
       shell: bash
     - name: Run scripting tests
       run: |
-        shopt -qs nullglob
+        shopt -qs extglob nullglob
         cp --force -- "${GITHUB_WORKSPACE}/.scripting-testrunner/shell-filesystem/bin/hasMatchingFile" "${GITHUB_ACTION_PATH}/bin"
 
         for dependencyPath in "${GITHUB_WORKSPACE}/dependencies"/*
@@ -54,5 +54,5 @@ runs:
         EACHCOMPONENTDO_SETUP_PREFIX='::group::' \
         EACHCOMPONENTDO_SETUP_SUFFIX='::endgroup::' \
         ${{ inputs.settings }} \
-          runTests --exit-on-failure "$PWD" "${PWD}/tests"/*
+          runTests --exit-on-failure "$PWD" "${PWD}/tests"@()/ "${PWD}/tests"/*/
       shell: bash
