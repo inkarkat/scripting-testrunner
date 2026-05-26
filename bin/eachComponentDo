@@ -105,7 +105,7 @@ componentsNum=$#
 componentsPlural=s; [ $componentsNum -eq 1 ] && componentsPlural=
 printf '%s %d potential component%s.\n' "$what" "$componentsNum" "$componentsPlural"
 let componentCnt=0
-let failCnt=0
+typeset -a failedComponents=()
 status=
 for dirspec
 do
@@ -127,7 +127,7 @@ do
 	    continue
 	fi
 
-	let failCnt+=1
+	failedComponents+=("$dirspec")
 	if [ "$isExitOnFailure" ]; then
 	    printf '\n%s for %d component%s failed at component %d: %s\n' "$what" "$componentsNum" "$componentsPlural" $componentCnt "$dirspec"
 	    exit $exitStatus
@@ -138,9 +138,10 @@ do
 done
 
 componentsPlural=s; [ $componentsNum -eq 1 ] && componentsPlural=
-if [ $failCnt -gt 0 ]; then
+if [ ${#failedComponents[@]} -gt 0 ]; then
+    failCnt=${#failedComponents[@]}
     failCntPlural=s; [ $failCnt -eq 1 ] && failCntPlural=
-    printf '\n%s for %s%d component%s done; %d component%s failed.\n' "$what" "${componentsPlural:+all }" "$componentsNum" "$componentsPlural" $failCnt "$failCntPlural"
+    printf '\n%s for %s%d component%s done; %d component%s failed: %s\n' "$what" "${componentsPlural:+all }" "$componentsNum" "$componentsPlural" $failCnt "$failCntPlural" "$(joinBy ', ' "${failedComponents[@]}")"
 else
     printf '\n%s for %s%d component%s done.\n' "$what" "${componentsPlural:+all }" "$componentsNum" "$componentsPlural"
 fi
