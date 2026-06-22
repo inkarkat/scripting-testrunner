@@ -18,7 +18,7 @@ runs:
   using: composite
   steps:
     - name: Checkout scripting-testrunner dependencies
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: inkarkat/shell-filesystem
         path: .scripting-testrunner/shell-filesystem
