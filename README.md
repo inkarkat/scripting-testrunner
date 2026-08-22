@@ -27,5 +27,6 @@ The project's `README.md` has dependencies listed like this:
 ```markdown
 ### Dependencies
 * [inkarkat/shell-basics](https://github.com/inkarkat/shell-basics)
+* [inkarkat/shell-scripting (stable)](https://github.com/inkarkat/shell-scripting/tree/stable)
 * [inkarkat/shell-tools](https://github.com/inkarkat/shell-tools) (optional)
 ```

@@ -19,7 +19,8 @@ printLongUsage()
     # It is printed to stdout to allow paging with 'more'.
     cat <<HELPDESCRIPTION
 Extract dependencies listed in the passed MARKDOWN-FILE(s) and check them out
-into the current directory.
+into the current directory. Particular branches / tags / revisions can be
+specified by appending /tree/... to the repository URL.
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
@@ -62,6 +63,15 @@ parseAndCheckout()
 {
     while IFS=$'\n' read -r dependencyUrl
     do
+	typeset -a cloneTreeArgs=()
+	if [[ "$dependencyUrl" =~ ^(.*)/tree/([[:xdigit:]]+)$ ]]; then
+	    dependencyUrl="${BASH_REMATCH[1]}.git"
+	    cloneTreeArgs=(--revision "${BASH_REMATCH[2]}")
+	elif [[ "$dependencyUrl" =~ ^(.*)/tree/(.*)$ ]]; then
+	    dependencyUrl="${BASH_REMATCH[1]}.git"
+	    cloneTreeArgs=(--branch "${BASH_REMATCH[2]}")
+	fi
+
 	wcName="${dependencyUrl%.git}"; wcName="${wcName##*/}"
 	if [ -d "$wcName" ]; then
 	    printf 'Dependency %s already exists; skipping.\n' "$wcName"
@@ -69,7 +79,7 @@ parseAndCheckout()
 	fi
 
 	printf 'Cloning dependency %s\n' "$dependencyUrl"
-	${DEBUG:+debugcommand --for git --} git clone "${gitCloneArgs[@]}" --depth 1 "$dependencyUrl" "$wcName" || return $?
+	${DEBUG:+debugcommand --for git --} git clone "${gitCloneArgs[@]}" "${cloneTreeArgs[@]}" --depth 1 "$dependencyUrl" "$wcName" || return $?
 	parseAndCheckout "${recursiveMarkdownFiles[@]/#/./$wcName/}"
     done < <(extractGitDependencies "${extractGitDependenciesArgs[@]}" "$@")
 }
