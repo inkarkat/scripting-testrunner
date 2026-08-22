@@ -32,6 +32,9 @@ HELPDESCRIPTION
 			copy) MARKDOWN-FILE(s) of cloned dependencies and check
 			those out (also in the current directory), too. (Unless
 			they already exist.)
+			Attention: First encountered branch / tag / revision of
+			a dependency wins; there's no check for conflicting
+			versions.
     --recurse-submodules
 			Check out submodules of dependencies, too.
 HELPTEXT
