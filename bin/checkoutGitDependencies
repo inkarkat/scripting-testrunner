@@ -63,22 +63,25 @@ parseAndCheckout()
 {
     while IFS=$'\n' read -r dependencyUrl
     do
+	cloneWhat=''
 	typeset -a cloneTreeArgs=()
 	if [[ "$dependencyUrl" =~ ^(.*)/tree/([[:xdigit:]]+)$ ]]; then
 	    dependencyUrl="${BASH_REMATCH[1]}.git"
+	    cloneWhat="revision ${BASH_REMATCH[2]}"
 	    cloneTreeArgs=(--revision "${BASH_REMATCH[2]}")
 	elif [[ "$dependencyUrl" =~ ^(.*)/tree/(.*)$ ]]; then
 	    dependencyUrl="${BASH_REMATCH[1]}.git"
+	    cloneWhat="branch/tag '${BASH_REMATCH[2]}'"
 	    cloneTreeArgs=(--branch "${BASH_REMATCH[2]}")
 	fi
 
 	wcName="${dependencyUrl%.git}"; wcName="${wcName##*/}"
 	if [ -d "$wcName" ]; then
-	    printf 'Dependency %s already exists; skipping.\n' "$wcName"
+	    printf 'Dependency %s already exists; skipping%s.\n' "$wcName" "${cloneWhat:+ }${cloneWhat}"
 	    continue
 	fi
 
-	printf 'Cloning dependency %s\n' "$dependencyUrl"
+	printf 'Cloning%s dependency %s\n' "${cloneWhat:+ }${cloneWhat}${cloneWhat:+ of}" "$dependencyUrl"
 	${DEBUG:+debugcommand --for git --} git clone "${gitCloneArgs[@]}" "${cloneTreeArgs[@]}" --depth 1 "$dependencyUrl" "$wcName" || return $?
 	parseAndCheckout "${recursiveMarkdownFiles[@]/#/./$wcName/}"
     done < <(extractGitDependencies "${extractGitDependenciesArgs[@]}" "$@")
