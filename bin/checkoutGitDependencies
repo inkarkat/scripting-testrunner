@@ -69,7 +69,7 @@ parseAndCheckout()
 	fi
 
 	printf 'Cloning dependency %s\n' "$dependencyUrl"
-	git clone "${gitCloneArgs[@]}" --depth 1 "$dependencyUrl" "$wcName" || return $?
+	${DEBUG:+debugcommand --for git --} git clone "${gitCloneArgs[@]}" --depth 1 "$dependencyUrl" "$wcName" || return $?
 	parseAndCheckout "${recursiveMarkdownFiles[@]/#/./$wcName/}"
     done < <(extractGitDependencies "${extractGitDependenciesArgs[@]}" "$@")
 }
