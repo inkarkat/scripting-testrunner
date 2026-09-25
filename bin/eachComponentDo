@@ -96,12 +96,12 @@ setupPythonVirtualEnv() {
     fi
     [ -n "$VIRTUAL_ENV" ] || return 1
 
-    if [ "$newEnv" ]; then
-	quietPrintf '\n%sInstalling requirements for %s:\n' "$EACHCOMPONENTDO_SETUP_PREFIX" "$(basename -- "$projectDirspec")"
-	local requirementsFilespec="${projectDirspec}/requirements.txt"
-	pip3 install --requirement "$requirementsFilespec" || return $?
-	[ -z "$EACHCOMPONENTDO_SETUP_SUFFIX" ] || quietPrintf '%s\n' "$EACHCOMPONENTDO_SETUP_SUFFIX"
-    fi
+    [ "$newEnv" ] || return 0
+    quietPrintf '\n%sInstalling requirements for %s:\n' "$EACHCOMPONENTDO_SETUP_PREFIX" "$(basename -- "$projectDirspec")"
+    local requirementsFilespec="${projectDirspec}/requirements.txt"
+    pip3 install --requirement "$requirementsFilespec"; local status=$?
+    [ -z "$EACHCOMPONENTDO_SETUP_SUFFIX" ] || quietPrintf '%s\n' "$EACHCOMPONENTDO_SETUP_SUFFIX"
+    return $status
 }
 
 componentsNum=$#
