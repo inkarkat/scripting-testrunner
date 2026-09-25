@@ -31,36 +31,31 @@ runProve()
     prove -I.
 )
 
-
 hasFoundTests=
-if hasMatchingFile '*.bats' "${testDirspec}/"; then
-    hasFoundTests=t
-    printf '\n%sTesting %s%s with Bats:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount"
-    bats -r "${testDirspec}/" || exit $?
-    [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
-fi
+runTestsFor()
+{
+    local what="${1:?}"; shift
 
-if hasMatchingFile 'test*.py' "${testDirspec}/"; then
     hasFoundTests=t
-    printf '\n%sTesting %s%s with Python:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount"
-    python3 -m unittest discover --verbose --start-directory "${testDirspec}/" || exit $?
+    printf '\n%sTesting %s%s with %s:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount" "$what"
+    "$@"; local status=$?
     [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
-fi
+    return $status
+}
 
-if [ -d "${testDirspec}/t" ]; then
-    hasFoundTests=t
-    printf '\n%sTesting %s%s with Perl:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount"
-    runProve || exit $?
-    [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
-fi
+! hasMatchingFile '*.bats' "${testDirspec}/" \
+    || runTestsFor Bats bats -r "${testDirspec}/"
+
+! hasMatchingFile 'test*.py' "${testDirspec}/" \
+    || runTestsFor Python python3 -m unittest discover --verbose --start-directory "${testDirspec}/"
+
+[ ! -d "${testDirspec}/t" ] \
+    || runTestsFor Perl runProve
 
 if [ -r "${testDirspec}/Makefile" ] \
     && { make --question test >/dev/null 2>&1; [ $? -ne 2 ]; }	# inlined "makeHasTarget test"
 then
-    hasFoundTests=t
-    printf '\n%sTesting %s%s with Make:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount"
-    make --directory "${testDirspec}/" test || exit $?
-    [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
+    runTestsFor Make make --directory "${testDirspec}/" test
 fi
 
 if [ ! "$hasFoundTests" ]; then
