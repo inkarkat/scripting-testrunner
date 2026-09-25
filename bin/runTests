@@ -9,12 +9,22 @@ printUsage()
 Run all tests in tests/*/ / any tests found in each COMPONENT-DIR.
 HELPTEXT
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" "[--exit-on-failure] [-c|--command \"ADDITIONAL-COMMANDLINE\" [-c ...] | --exec ADDITIONAL-SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...]] [--] [COMPONENT-DIR [...]] [-?|-h|--help]"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "[--check] [--exit-on-failure] [-c|--command \"ADDITIONAL-COMMANDLINE\" [-c ...] | --exec ADDITIONAL-SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...]] [--] [COMPONENT-DIR [...]] [-?|-h|--help]"
 }
 
-case "$1" in
-    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-esac
+typeset -a runTestsInArgs=()
+typeset -a eachComponentDoArgs=()
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--check)	runTestsInArgs+=("$1"); shift;;
+	--)		eachComponentDoArgs+=("$1"); shift; break;;
+	*)		eachComponentDoArgs+=("$1"); shift;;
+    esac
+done
+set -- "${eachComponentDoArgs[@]}" "$@"
+
 if [ $# -eq 0 ]; then
     set -- tests/*
     if [ $# -eq 0 ]; then
@@ -23,4 +33,6 @@ if [ $# -eq 0 ]; then
     fi
 fi
 
-exec eachComponentDo --what Testing --status-99-is-noop --command runTestsIn "$@"
+exec eachComponentDo --what Testing --status-99-is-noop \
+    --exec runTestsIn "${runTestsInArgs[@]}" "${EACHCOMPONENTDO_EXEC_END-;}" \
+    "$@"
