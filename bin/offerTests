@@ -36,9 +36,19 @@ do
 done
 
 runTests --check "$@" || exit $OFFERTESTS_NO_TESTS_EXIT_STATUS
-reply="$(userchoiceFromList --no-cancel --ignore-case --keep-prompt --question 'Run tests now?' '[Y]es' '[N]o')" || exit $OFFERTESTS_USER_ABORT_EXIT_STATUS
+reply="$(userchoiceFromList --no-cancel --ignore-case --keep-prompt --question 'Run tests now?' '[Y]es' '[N]o' '[S]elect some')" || exit $OFFERTESTS_USER_ABORT_EXIT_STATUS
 case "$reply" in
     Yes)    exec runTests "${eachComponentDoArgs[@]}" "$@";;
     No)	    exit $OFFERTESTS_USER_ABORT_EXIT_STATUS;;
+    Select\ some)
+	    readarray -t chosenTestDirspecs < <(
+		RUNTESTSIN_CHECK_PORCELAIN=t runTests --check "$@" \
+		    | aggregateField --join ', ' --group-by 1 --group-by 2 3 \
+		    | sed -e 's/\t\([^\t]\+\)$/ (\1\)/' \
+		    | commandWithHiddenId --stdin --piped --command 'commandOnSelected --stdin'
+	    )
+	    [ ${#chosenTestDirspecs[@]} -gt 0 ] || exit $OFFERTESTS_USER_ABORT_EXIT_STATUS
+	    exec runTests "${eachComponentDoArgs[@]}" "${chosenTestDirspecs[@]}"
+	    ;;
     *)	    printf >&2 'ASSERT: Unexpected reply: %s\n' "$reply"; exit 3;;
 esac
