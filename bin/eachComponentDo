@@ -8,7 +8,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" "[--what WHAT] [--exit-on-failure] [--status-99-is-noop] -c|--command \"COMMANDLINE\" [-c ...] | --exec SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...] [--] COMPONENT-DIR [...] [-?|-h|--help]"
+    printf 'Usage: %q %s\n' "$(basename "$1")" "[--what WHAT] [-q|--quiet] [--no-setup] [--exit-on-failure] [--status-99-is-noop] -c|--command \"COMMANDLINE\" [-c ...] | --exec SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...] [--] COMPONENT-DIR [...] [-?|-h|--help]"
 }
 printUsage()
 {
@@ -29,6 +29,9 @@ HELPDESCRIPTION
     echo
     cat <<HELPTEXT
     --what WHAT		Description for COMMAND's actions.
+    --quiet|-q		Don't print setup messages and component summary.
+    --no-setup		Don't setup Python virtual environment and install
+			requirements.
     --exit-on-failure   Stop execution if COMMAND is unsuccessful (like set -e).
     --status-99-is-noop Exit status 99 from COMMAND signifies no action or
 			inapplicability; that is only returned if all
@@ -36,7 +39,9 @@ HELPDESCRIPTION
 HELPTEXT
 }
 
+quietPrintf() { printf "$@"; }
 what=''
+isSetup=t
 isExitOnFailure=
 isStatus99IsNoop=
 commands=
@@ -45,6 +50,8 @@ do
     case "$1" in
 	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
 	--what)         shift; what="${1:?}"; shift;;
+	--quiet|-q)	shift; quietPrintf() { :; };;
+	--no-setup)	shift; isSetup=;;
 	--exit-on-failure)
 			shift; isExitOnFailure=t;;
 	--status-99-is-noop)
@@ -83,9 +90,9 @@ setupPythonVirtualEnv() {
     local pyvenvDirspec="${projectDirspec}/.venv"
     local newEnv=
     if [ -z "$VIRTUAL_ENV" -a ! -d "$pyvenvDirspec" ]; then
-	printf '\n%sSetting up Python virtual environment at %s:\n' "$EACHCOMPONENTDO_SETUP_PREFIX" "$pyvenvDirspec"
+	quietPrintf '\n%sSetting up Python virtual environment at %s:\n' "$EACHCOMPONENTDO_SETUP_PREFIX" "$pyvenvDirspec"
 	python3 -m venv "$pyvenvDirspec" || return $?
-	[ -z "$EACHCOMPONENTDO_SETUP_SUFFIX" ] || printf '%s\n' "$EACHCOMPONENTDO_SETUP_SUFFIX"
+	[ -z "$EACHCOMPONENTDO_SETUP_SUFFIX" ] || quietPrintf '%s\n' "$EACHCOMPONENTDO_SETUP_SUFFIX"
 	newEnv=t
     fi
     if [ -z "$VIRTUAL_ENV" ]; then
@@ -93,17 +100,17 @@ setupPythonVirtualEnv() {
     fi
     [ -n "$VIRTUAL_ENV" ] || return 1
 
-    if [ "$newEnv" ]; then
-	printf '\n%sInstalling requirements for %s:\n' "$EACHCOMPONENTDO_SETUP_PREFIX" "$(basename -- "$projectDirspec")"
-	local requirementsFilespec="${projectDirspec}/requirements.txt"
-	pip3 install --requirement "$requirementsFilespec" || return $?
-	[ -z "$EACHCOMPONENTDO_SETUP_SUFFIX" ] || printf '%s\n' "$EACHCOMPONENTDO_SETUP_SUFFIX"
-    fi
+    [ "$newEnv" ] || return 0
+    quietPrintf '\n%sInstalling requirements for %s:\n' "$EACHCOMPONENTDO_SETUP_PREFIX" "$(basename -- "$projectDirspec")"
+    local requirementsFilespec="${projectDirspec}/requirements.txt"
+    pip3 install --requirement "$requirementsFilespec"; local status=$?
+    [ -z "$EACHCOMPONENTDO_SETUP_SUFFIX" ] || quietPrintf '%s\n' "$EACHCOMPONENTDO_SETUP_SUFFIX"
+    return $status
 }
 
 componentsNum=$#
 componentsPlural=s; [ $componentsNum -eq 1 ] && componentsPlural=
-printf '%s %d potential component%s.\n' "$what" "$componentsNum" "$componentsPlural"
+quietPrintf '%s %d potential component%s.\n' "$what" "$componentsNum" "$componentsPlural"
 let componentCnt=0
 typeset -a failedComponents=()
 status=
@@ -115,7 +122,7 @@ do
 
     ( # Note: Execute in subshell so that different Python virtual environments don't influence each other and we can skip the deactivation.
 	if hasMatchingFile 'requirements.txt' "$dirspec"; then
-	    setupPythonVirtualEnv "$dirspec"
+	    [ ! "$isSetup" ] || setupPythonVirtualEnv "$dirspec"
 	fi
 
 	eval "${commands:-echo}" "$dirspec"
@@ -129,7 +136,7 @@ do
 
 	failedComponents+=("$dirspec")
 	if [ "$isExitOnFailure" ]; then
-	    printf '\n%s for %d component%s failed at component %d: %s\n' "$what" "$componentsNum" "$componentsPlural" $componentCnt "$dirspec"
+	    quietPrintf '\n%s for %d component%s failed at component %d: %s\n' "$what" "$componentsNum" "$componentsPlural" $componentCnt "$dirspec"
 	    exit $exitStatus
 	elif [ $exitStatus -gt ${status:-0} ]; then
 	    status=$exitStatus
@@ -141,8 +148,8 @@ componentsPlural=s; [ $componentsNum -eq 1 ] && componentsPlural=
 if [ ${#failedComponents[@]} -gt 0 ]; then
     failCnt=${#failedComponents[@]}
     failCntPlural=s; [ $failCnt -eq 1 ] && failCntPlural=
-    printf '\n%s for %s%d component%s done; %d component%s failed: %s\n' "$what" "${componentsPlural:+all }" "$componentsNum" "$componentsPlural" $failCnt "$failCntPlural" "$(joinBy ', ' "${failedComponents[@]}")"
+    quietPrintf '\n%s for %s%d component%s done; %d component%s failed: %s\n' "$what" "${componentsPlural:+all }" "$componentsNum" "$componentsPlural" $failCnt "$failCntPlural" "$(joinBy ', ' "${failedComponents[@]}")"
 else
-    printf '\n%s for %s%d component%s done.\n' "$what" "${componentsPlural:+all }" "$componentsNum" "$componentsPlural"
+    quietPrintf '\n%s for %s%d component%s done.\n' "$what" "${componentsPlural:+all }" "$componentsNum" "$componentsPlural"
 fi
 exit ${status:-99}

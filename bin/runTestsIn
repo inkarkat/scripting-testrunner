@@ -1,17 +1,39 @@
 #!/bin/bash
 shopt -qs extglob
 
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--check] DIR [-?|-h|--help]'
+}
 printUsage()
 {
-    cat <<HELPTEXT
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 '\nTry %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
 Run any tests found in the given DIR.
-HELPTEXT
+HELPDESCRIPTION
     echo
-    printf 'Usage: %q %s\n' "$(basename "$1")" 'DIR [-?|-h|--help]'
+    printShortUsage "$1"
+    echo
+    cat <<HELPTEXT
+    --check		Just print what tests would be run, but don't actually
+			run them.
+HELPTEXT
 }
 
+isCheck=
 case "$1" in
-    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+    --help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
+    --check)		shift; isCheck=t;;
 esac
 if [ $# -ne 1 ]; then
     printUsage "$0" >&2
@@ -25,39 +47,45 @@ testSubject="${testSubject%/}"
 
 componentCount="${COMPONENT_COUNT:+ (}${COMPONENT_COUNT}${COMPONENT_COUNT:+)}"
 
+runProve()
+(   # Note: Subshell here because of the chdir.
+    cd "$testDirspec" || return 3
+    prove -I.
+)
+
 hasFoundTests=
-if hasMatchingFile '*.bats' "${testDirspec}/"; then
-    hasFoundTests=t
-    printf '\n%sTesting %s%s with Bats:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount"
-    bats -r "${testDirspec}/" || exit $?
-    [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
-fi
+runTestsFor()
+{
+    local what="${1:?}"; shift
 
-if hasMatchingFile 'test*.py' "${testDirspec}/"; then
     hasFoundTests=t
-    printf '\n%sTesting %s%s with Python:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount"
-    python3 -m unittest discover --verbose --start-directory "${testDirspec}/" || exit $?
-    [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
-fi
+    if [ "$isCheck" ]; then
+	printf '%sCould test %s with %s.\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$what"
+	return 0
+    fi
 
-if [ -d "${testDirspec}/t" ]; then
-    hasFoundTests=t
-    printf '\n%sTesting %s%s with Perl:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount"
-    cd "$testDirspec" || exit 3
-    prove -I. || exit $?
+    printf '\n%sTesting %s%s with %s:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount" "$what"
+    "$@"; local status=$?
     [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
-fi
+    return $status
+}
+
+! hasMatchingFile '*.bats' "${testDirspec}/" \
+    || runTestsFor Bats bats -r "${testDirspec}/"
+
+! hasMatchingFile 'test*.py' "${testDirspec}/" \
+    || runTestsFor Python python3 -m unittest discover --verbose --start-directory "${testDirspec}/"
+
+[ ! -d "${testDirspec}/t" ] \
+    || runTestsFor Perl runProve
 
 if [ -r "${testDirspec}/Makefile" ] \
     && { make --question test >/dev/null 2>&1; [ $? -ne 2 ]; }	# inlined "makeHasTarget test"
 then
-    hasFoundTests=t
-    printf '\n%sTesting %s%s with Make:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount"
-    make --directory "${testDirspec}/" test || exit $?
-    [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
+    runTestsFor Make make --directory "${testDirspec}/" test
 fi
 
 if [ ! "$hasFoundTests" ]; then
-    printf >&2 'Note: No tests found in %s\n' "$testDirspec"
+    [ "$isCheck" ] || printf >&2 'Note: No tests found in %s\n' "$testDirspec"
     exit 99
 fi
