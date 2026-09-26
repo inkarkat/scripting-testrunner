@@ -3,6 +3,8 @@ shopt -qs extglob nullglob
 
 : ${EACHCOMPONENTDO_COMMAND_JOINER=;}
 : ${EACHCOMPONENTDO_EXEC_END=;}
+: ${EACHCOMPONENTDO_DIR_MARKER='{}'}
+dirMarker="$EACHCOMPONENTDO_DIR_MARKER"; unset EACHCOMPONENTDO_DIR_MARKER
 
 printShortUsage()
 {
@@ -22,7 +24,8 @@ printLongUsage()
     # This is the long "man page" when launched with the help argument.
     # It is printed to stdout to allow paging with 'more'.
     cat <<HELPDESCRIPTION
-Execute COMMAND on each COMPONENT-DIR, which is appended to COMMAND.
+Execute COMMAND on each COMPONENT-DIR, which${dirMarker:+ either} is appended${dirMarker:+ or replaces any
+$dirMarker marker} inside COMMANDLINE.
 HELPDESCRIPTION
     echo
     printShortUsage "$1"
@@ -59,10 +62,11 @@ do
 	--command|-c)	shift; commands+="${commands:+ $EACHCOMPONENTDO_COMMAND_JOINER }$1"; shift;;
 	--exec)		shift
 			cmd=
+			printf -v escapedFileMarker %q "$dirMarker"
 			while [ $# -gt 0 -a "$1" != "$EACHCOMPONENTDO_EXEC_END" ]
 			do
 			    printf -v quotedArg %q "$1"
-			    cmd+="${cmd:+ }${quotedArg}"
+			    cmd+="${cmd:+ }${quotedArg//"$escapedFileMarker"/$dirMarker}"	# %q escapes {}, we don't want that to have it interpolated later.
 			    shift
 			done
 			if [ $# -eq 0 ]; then
@@ -125,7 +129,10 @@ do
 	    [ ! "$isSetup" ] || setupPythonVirtualEnv "$dirspec"
 	fi
 
-	eval "${commands:-echo}" "$dirspec"
+	printf -v quotedDirspec %q "$dirspec"
+	interpolatedCommands="${commands//"$dirMarker"/$quotedDirspec}"
+	[ "$interpolatedCommands" = "$commands" ] || quotedDirspec=''
+	eval "${interpolatedCommands:-echo}" "$quotedDirspec"
     ) && : ${status:=0} || {
 	exitStatus=$?
 	if [ $exitStatus -eq 99 ] && [ "$isStatus99IsNoop" ]; then
