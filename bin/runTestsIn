@@ -60,7 +60,9 @@ runTestsFor()
 
     hasFoundTests=t
     if [ "$isCheck" ]; then
-	printf '%sCould test %s with %s.\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$what"
+	[ "$RUNTESTSIN_CHECK_PORCELAIN" ] \
+	    && printf '%s\t%s\t%s\n' "${testDirspec}/" "$testSubject" "$what" \
+	    || printf '%sCould test %s with %s.\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$what"
 	return 0
     fi
 
