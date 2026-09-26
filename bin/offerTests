@@ -36,5 +36,9 @@ do
 done
 
 runTests --check "$@" || exit $OFFERTESTS_NO_TESTS_EXIT_STATUS
-userBinaryChoice --yes-no --keep-prompt --question 'Run tests now?' || exit $OFFERTESTS_USER_ABORT_EXIT_STATUS
-exec runTests "${eachComponentDoArgs[@]}" "$@"
+reply="$(userchoiceFromList --no-cancel --ignore-case --keep-prompt --question 'Run tests now?' '[Y]es' '[N]o')" || exit $OFFERTESTS_USER_ABORT_EXIT_STATUS
+case "$reply" in
+    Yes)    exec runTests "${eachComponentDoArgs[@]}" "$@";;
+    No)	    exit $OFFERTESTS_USER_ABORT_EXIT_STATUS;;
+    *)	    printf >&2 'ASSERT: Unexpected reply: %s\n' "$reply"; exit 3;;
+esac
