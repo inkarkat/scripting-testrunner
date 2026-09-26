@@ -156,7 +156,9 @@ if [ ${#failedComponents[@]} -gt 0 ]; then
     failCnt=${#failedComponents[@]}
     failCntPlural=s; [ $failCnt -eq 1 ] && failCntPlural=
     quietPrintf '\n%s for %s%d component%s done; %d component%s failed: %s\n' "$what" "${componentsPlural:+all }" "$componentsNum" "$componentsPlural" $failCnt "$failCntPlural" "$(joinBy ', ' "${failedComponents[@]}")"
-else
+elif [ $componentsNum -gt 0 ]; then
     quietPrintf '\n%s for %s%d component%s done.\n' "$what" "${componentsPlural:+all }" "$componentsNum" "$componentsPlural"
+else
+    quietPrintf 'No %s done.\n' "${what,}"
 fi
 exit ${status:-99}
