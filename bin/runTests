@@ -1,12 +1,13 @@
 #!/bin/bash
-shopt -qs nullglob
+shopt -qs extglob nullglob
 
 : ${EACHCOMPONENTDO_EXEC_END=;}
 
 printUsage()
 {
     cat <<HELPTEXT
-Run all tests in tests/*/ / any tests found in each COMPONENT-DIR.
+Run all tests found in the current directory (and a two-level tests/ subdir
+hierarchy) / each COMPONENT-DIR.
 HELPTEXT
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" "[--check] [--exit-on-failure] [-c|--command \"ADDITIONAL-COMMANDLINE\" [-c ...] | --exec ADDITIONAL-SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...]] [--] [COMPONENT-DIR [...]] [-?|-h|--help]"
@@ -36,7 +37,7 @@ do
 done
 
 if [ $# -eq 0 ]; then
-    set -- tests/*
+    set -- . tests@()/ tests/*/
     if [ $# -eq 0 ]; then
 	[ "$isCheck" ] || echo >&2 'ERROR: No tests/COMPONENT-DIR(s) found.'
 	exit 99

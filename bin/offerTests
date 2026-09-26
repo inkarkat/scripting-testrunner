@@ -8,7 +8,8 @@ shopt -qs nullglob
 printUsage()
 {
     cat <<HELPTEXT
-If there are any tests in tests/*/ / in each COMPONENT-DIR, offer to run them.
+If there are any tests in the current directory (and a two-level tests/ subdir
+hierarchy) / each COMPONENT-DIR, offer to run them.
 HELPTEXT
     echo
     printf 'Usage: %q %s\n' "$(basename "$1")" "[--exit-on-failure] [-c|--command \"ADDITIONAL-COMMANDLINE\" [-c ...] | --exec ADDITIONAL-SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...]] [--] [COMPONENT-DIR [...]] [-?|-h|--help]"
