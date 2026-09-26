@@ -44,5 +44,5 @@ if [ $# -eq 0 ]; then
 fi
 
 exec eachComponentDo --what Testing --status-99-is-noop \
-    --exec runTestsIn "${runTestsInArgs[@]}" "${EACHCOMPONENTDO_EXEC_END-;}" \
+    --exec runTestsIn "${runTestsInArgs[@]}" "${EACHCOMPONENTDO_DIR_MARKER-{\}}" "${EACHCOMPONENTDO_EXEC_END-;}" \
     "${eachComponentDoArgs[@]}" "$@"
