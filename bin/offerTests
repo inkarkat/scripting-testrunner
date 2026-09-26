@@ -15,25 +15,25 @@ HELPTEXT
 }
 
 typeset -a eachComponentDoArgs=()
-typeset -a eachComponentDoAdditionalCommandsArgs=()
 while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	--command|-c)	eachComponentDoAdditionalCommandsArgs+=("$1" "${2?}"); shift; shift;;
-	--exec)		eachComponentDoAdditionalCommandsArgs+=("$1"); shift
+	--exit-on-failure)
+			eachComponentDoArgs+=("$1"); shift;;
+	--command|-c)	eachComponentDoArgs+=("$1" "${2?}"); shift; shift;;
+	--exec)		eachComponentDoArgs+=("$1"); shift
 			while [ $# -gt 0 -a "$1" != "$EACHCOMPONENTDO_EXEC_END" ]
 			do
-			    eachComponentDoAdditionalCommandsArgs+=("$1"); shift
+			    eachComponentDoArgs+=("$1"); shift
 			done
-			eachComponentDoAdditionalCommandsArgs+=("$1"); shift
+			eachComponentDoArgs+=("$1"); shift
 			;;
 	--)		eachComponentDoArgs+=("$1"); shift; break;;
-	*)		eachComponentDoArgs+=("$1"); shift;;
+	*)		break;;
     esac
 done
-set -- "${eachComponentDoArgs[@]}" "$@"
 
 runTests --check "$@" || exit $OFFERTESTS_NO_TESTS_EXIT_STATUS
 userBinaryChoice --yes-no --keep-prompt --question 'Run tests now?' || exit $OFFERTESTS_USER_ABORT_EXIT_STATUS
-exec runTests "${eachComponentDoAdditionalCommandsArgs[@]}" "$@"
+exec runTests "${eachComponentDoArgs[@]}" "$@"
