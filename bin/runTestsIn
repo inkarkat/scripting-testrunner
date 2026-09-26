@@ -60,7 +60,7 @@ runTestsFor()
 
     hasFoundTests=t
     if [ "$isCheck" ]; then
-	printf '%sCould test %s%s with %s.\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount" "$what"
+	printf '%sCould test %s with %s.\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$what"
 	return 0
     fi
 
