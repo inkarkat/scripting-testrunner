@@ -86,6 +86,11 @@ then
 fi
 
 if [ ! "$hasFoundTests" ]; then
-    [ "$isCheck" ] || printf >&2 'Note: No tests found in %s\n' "$testDirspec"
+    if [ ! "$isCheck" ]; then
+	[ "$testDirspec" = . ] \
+	    && where='the current directory.' \
+	    || where="${testDirspec}/"
+	printf >&2 'Note: No tests found in %s\n' "$where"
+    fi
     exit 99
 fi
