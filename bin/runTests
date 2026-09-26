@@ -15,17 +15,25 @@ HELPTEXT
 isCheck=
 typeset -a runTestsInArgs=()
 typeset -a eachComponentDoArgs=()
-typeset -a eachComponentDoImplicitArgs=()
 while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	--check)	runTestsInArgs+=("$1"); shift; eachComponentDoImplicitArgs+=(--quiet --no-setup); isCheck=t;;
+	--check)	runTestsInArgs+=("$1"); shift; eachComponentDoArgs+=(--quiet --no-setup); isCheck=t;;
+	--exit-on-failure)
+			eachComponentDoArgs+=("$1"); shift;;
+	--command|-c)	eachComponentDoArgs+=("$1" "${2?}"); shift; shift;;
+	--exec)		eachComponentDoArgs+=("$1"); shift
+			while [ $# -gt 0 -a "$1" != "$EACHCOMPONENTDO_EXEC_END" ]
+			do
+			    eachComponentDoArgs+=("$1"); shift
+			done
+			eachComponentDoArgs+=("$1"); shift
+			;;
 	--)		eachComponentDoArgs+=("$1"); shift; break;;
-	*)		eachComponentDoArgs+=("$1"); shift;;
+	*)		break;;
     esac
 done
-set -- "${eachComponentDoArgs[@]}" "$@"
 
 if [ $# -eq 0 ]; then
     set -- tests/*
@@ -36,5 +44,5 @@ if [ $# -eq 0 ]; then
 fi
 
 exec eachComponentDo --what Testing --status-99-is-noop \
-    --exec runTestsIn "${runTestsInArgs[@]}" "${EACHCOMPONENTDO_EXEC_END-;}" \
-    "${eachComponentDoImplicitArgs[@]}" "$@"
+    --exec runTestsIn "${runTestsInArgs[@]}" "${EACHCOMPONENTDO_DIR_MARKER-{\}}" "${EACHCOMPONENTDO_EXEC_END-;}" \
+    "${eachComponentDoArgs[@]}" "$@"

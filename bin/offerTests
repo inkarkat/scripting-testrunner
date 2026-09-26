@@ -1,0 +1,39 @@
+#!/bin/bash
+shopt -qs nullglob
+
+: ${OFFERTESTS_NO_TESTS_EXIT_STATUS:=99}
+: ${OFFERTESTS_USER_ABORT_EXIT_STATUS:=4}
+: ${EACHCOMPONENTDO_EXEC_END=;}
+
+printUsage()
+{
+    cat <<HELPTEXT
+If there are any tests in tests/*/ / in each COMPONENT-DIR, offer to run them.
+HELPTEXT
+    echo
+    printf 'Usage: %q %s\n' "$(basename "$1")" "[--exit-on-failure] [-c|--command \"ADDITIONAL-COMMANDLINE\" [-c ...] | --exec ADDITIONAL-SIMPLECOMMAND [...] ${EACHCOMPONENTDO_EXEC_END} [--exec ...]] [--] [COMPONENT-DIR [...]] [-?|-h|--help]"
+}
+
+typeset -a eachComponentDoArgs=()
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--exit-on-failure)
+			eachComponentDoArgs+=("$1"); shift;;
+	--command|-c)	eachComponentDoArgs+=("$1" "${2?}"); shift; shift;;
+	--exec)		eachComponentDoArgs+=("$1"); shift
+			while [ $# -gt 0 -a "$1" != "$EACHCOMPONENTDO_EXEC_END" ]
+			do
+			    eachComponentDoArgs+=("$1"); shift
+			done
+			eachComponentDoArgs+=("$1"); shift
+			;;
+	--)		eachComponentDoArgs+=("$1"); shift; break;;
+	*)		break;;
+    esac
+done
+
+runTests --check "$@" || exit $OFFERTESTS_NO_TESTS_EXIT_STATUS
+userBinaryChoice --yes-no --keep-prompt --question 'Run tests now?' || exit $OFFERTESTS_USER_ABORT_EXIT_STATUS
+exec runTests "${eachComponentDoArgs[@]}" "$@"
