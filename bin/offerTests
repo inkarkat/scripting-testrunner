@@ -44,6 +44,7 @@ case "$reply" in
 	    readarray -t chosenTestDirspecs < <(
 		RUNTESTSIN_CHECK_PORCELAIN=t runTests --check "$@" \
 		    | aggregateField --join ', ' --group-by 1 --group-by 2 3 \
+		    | sort \
 		    | sed -e 's/\t\([^\t]\+\)$/ (\1\)/' \
 		    | commandWithHiddenId --stdin --piped --command 'commandOnSelected --stdin'
 	    )
