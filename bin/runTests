@@ -22,7 +22,7 @@ do
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--check)	runTestsInArgs+=("$1"); shift; eachComponentDoArgs+=(--quiet --no-setup); isCheck=t;;
 	--exit-on-failure)
-			eachComponentDoArgs+=("$1"); shift;;
+			runTestsInArgs+=("$1"); eachComponentDoArgs+=("$1"); shift;;
 	--command|-c)	eachComponentDoArgs+=("$1" "${2?}"); shift; shift;;
 	--exec)		eachComponentDoArgs+=("$1"); shift
 			while [ $# -gt 0 -a "$1" != "$EACHCOMPONENTDO_EXEC_END" ]

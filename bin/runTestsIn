@@ -5,7 +5,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--check] DIR [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--check|--exit-on-failure] DIR [-?|-h|--help]'
 }
 printUsage()
 {
@@ -27,13 +27,16 @@ HELPDESCRIPTION
     cat <<HELPTEXT
     --check		Just print what tests would be run, but don't actually
 			run them.
+    --exit-on-failure   Stop test execution if any test fails.
 HELPTEXT
 }
 
 isCheck=
+isExitOnFailure=
 case "$1" in
     --help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
     --check)		shift; isCheck=t;;
+    --exit-on-failure)	shift; isExitOnFailure=t;;
 esac
 if [ $# -ne 1 ]; then
     printUsage "$0" >&2
@@ -47,36 +50,54 @@ testSubject="${testSubject%/}"
 
 componentCount="${COMPONENT_COUNT:+ (}${COMPONENT_COUNT}${COMPONENT_COUNT:+)}"
 
+runBats()
+{
+    local failFastArg
+    [ "$isExitOnFailure" ] && versionCompare "$(bats --version)" -ge 1.13.0 \
+	&& failFastArg='--abort'
+    bats $failFastArg -r "${testDirspec}/"
+}
+
 runProve()
 (   # Note: Subshell here because of the chdir.
     cd "$testDirspec" || return 3
+    # Note: Prove doesn't have any flag to fail fast.
     prove -I.
 )
 
-hasFoundTests=
+status=
 runTestsFor()
 {
     local what="${1:?}"; shift
 
-    hasFoundTests=t
     if [ "$isCheck" ]; then
 	[ "$RUNTESTSIN_CHECK_PORCELAIN" ] \
 	    && printf '%s\t%s\t%s\n' "${testDirspec}/" "$testSubject" "$what" \
 	    || printf '%sCould test %s with %s.\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$what"
+	: ${status:=0}
 	return 0
     fi
 
     printf '\n%sTesting %s%s with %s:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount" "$what"
-    "$@"; local status=$?
+    "$@"; local exitStatus=$?
     [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
-    return $status
+
+    if [ $exitStatus -eq 0 ]; then
+	: ${status:=0}
+	return 0
+    elif [ "$isExitOnFailure" ]; then
+	exit $exitStatus
+    elif [ $exitStatus -gt ${status:-0} ]; then
+	status=$exitStatus
+    fi
+    return $exitStatus
 }
 
 ! hasMatchingFile '*.bats' "${testDirspec}/" \
-    || runTestsFor Bats bats -r "${testDirspec}/"
+    || runTestsFor Bats runBats
 
 ! hasMatchingFile 'test*.py' "${testDirspec}/" \
-    || runTestsFor Python python3 -m unittest discover --verbose --start-directory "${testDirspec}/"
+    || runTestsFor Python python3 -m unittest discover --verbose ${isExitOnFailure:+--failfast} --start-directory "${testDirspec}/"
 
 [ ! -d "${testDirspec}/t" ] \
     || runTestsFor Perl runProve
@@ -87,7 +108,7 @@ then
     runTestsFor Make make --directory "${testDirspec}/" test
 fi
 
-if [ ! "$hasFoundTests" ]; then
+if [ -z "$status" ]; then
     if [ ! "$isCheck" ]; then
 	[ "$testDirspec" = . ] \
 	    && where='the current directory.' \
@@ -96,3 +117,4 @@ if [ ! "$hasFoundTests" ]; then
     fi
     exit 99
 fi
+exit $status
