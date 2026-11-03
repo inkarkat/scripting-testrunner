@@ -5,7 +5,7 @@ printShortUsage()
 {
     # Note: short followed by long option; if the user knows the short one, she can
     # skim the long one.
-    printf 'Usage: %q %s\n' "$(basename "$1")" '[--check] DIR [-?|-h|--help]'
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--check|--exit-on-failure] DIR [-?|-h|--help]'
 }
 printUsage()
 {
@@ -27,13 +27,16 @@ HELPDESCRIPTION
     cat <<HELPTEXT
     --check		Just print what tests would be run, but don't actually
 			run them.
+    --exit-on-failure   Stop test execution if any test fails.
 HELPTEXT
 }
 
 isCheck=
+isExitOnFailure=
 case "$1" in
     --help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
     --check)		shift; isCheck=t;;
+    --exit-on-failure)	shift; isExitOnFailure=t;;
 esac
 if [ $# -ne 1 ]; then
     printUsage "$0" >&2
@@ -73,6 +76,8 @@ runTestsFor()
     if [ $exitStatus -eq 0 ]; then
 	: ${status:=0}
 	return 0
+    elif [ "$isExitOnFailure" ]; then
+	exit $exitStatus
     elif [ $exitStatus -gt ${status:-0} ]; then
 	status=$exitStatus
     fi
