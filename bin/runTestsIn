@@ -52,12 +52,16 @@ componentCount="${COMPONENT_COUNT:+ (}${COMPONENT_COUNT}${COMPONENT_COUNT:+)}"
 
 runBats()
 {
-    bats -r "${testDirspec}/"
+    local failFastArg
+    [ "$isExitOnFailure" ] && versionCompare "$(bats --version)" -ge 1.13.0 \
+	&& failFastArg='--abort'
+    bats $failFastArg -r "${testDirspec}/"
 }
 
 runProve()
 (   # Note: Subshell here because of the chdir.
     cd "$testDirspec" || return 3
+    # Note: Prove doesn't have any flag to fail fast.
     prove -I.
 )
 
