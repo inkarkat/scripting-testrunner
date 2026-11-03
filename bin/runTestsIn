@@ -54,6 +54,7 @@ runProve()
 )
 
 hasFoundTests=
+status=
 runTestsFor()
 {
     local what="${1:?}"; shift
@@ -63,13 +64,21 @@ runTestsFor()
 	[ "$RUNTESTSIN_CHECK_PORCELAIN" ] \
 	    && printf '%s\t%s\t%s\n' "${testDirspec}/" "$testSubject" "$what" \
 	    || printf '%sCould test %s with %s.\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$what"
+	: ${status:=0}
 	return 0
     fi
 
     printf '\n%sTesting %s%s with %s:\n' "$RUNTESTSIN_RUN_PREFIX" "$testSubject" "$componentCount" "$what"
-    "$@"; local status=$?
+    "$@"; local exitStatus=$?
     [ -z "$RUNTESTSIN_RUN_SUFFIX" ] || printf '%s\n' "$RUNTESTSIN_RUN_SUFFIX"
-    return $status
+
+    if [ $exitStatus -eq 0 ]; then
+	: ${status:=0}
+	return 0
+    elif [ $exitStatus -gt ${status:-0} ]; then
+	status=$exitStatus
+    fi
+    return $exitStatus
 }
 
 ! hasMatchingFile '*.bats' "${testDirspec}/" \
@@ -96,3 +105,4 @@ if [ ! "$hasFoundTests" ]; then
     fi
     exit 99
 fi
+exit $status
