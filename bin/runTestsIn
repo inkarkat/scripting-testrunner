@@ -50,6 +50,11 @@ testSubject="${testSubject%/}"
 
 componentCount="${COMPONENT_COUNT:+ (}${COMPONENT_COUNT}${COMPONENT_COUNT:+)}"
 
+runBats()
+{
+    bats -r "${testDirspec}/"
+}
+
 runProve()
 (   # Note: Subshell here because of the chdir.
     cd "$testDirspec" || return 3
@@ -85,7 +90,7 @@ runTestsFor()
 }
 
 ! hasMatchingFile '*.bats' "${testDirspec}/" \
-    || runTestsFor Bats bats -r "${testDirspec}/"
+    || runTestsFor Bats runBats
 
 ! hasMatchingFile 'test*.py' "${testDirspec}/" \
     || runTestsFor Python python3 -m unittest discover --verbose ${isExitOnFailure:+--failfast} --start-directory "${testDirspec}/"
