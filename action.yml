@@ -17,11 +17,14 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Checkout scripting-testrunner dependencies
+    - name: Checkout scripting-testrunner dependency shell-filesystem
       uses: actions/checkout@v7
       with:
         repository: inkarkat/shell-filesystem
         path: .scripting-testrunner/shell-filesystem
+        sparse-checkout: |
+          bin/hasMatchingFile
+        sparse-checkout-cone-mode: false
     - name: Checkout dependencies
       env:
         INCLUDE_OPTIONAL_DEPENDENCIES: ${{ fromJSON(inputs.include-optional-dependencies) && 't' || '' }}
