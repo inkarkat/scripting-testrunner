@@ -53,13 +53,11 @@ runProve()
     prove -I.
 )
 
-hasFoundTests=
 status=
 runTestsFor()
 {
     local what="${1:?}"; shift
 
-    hasFoundTests=t
     if [ "$isCheck" ]; then
 	[ "$RUNTESTSIN_CHECK_PORCELAIN" ] \
 	    && printf '%s\t%s\t%s\n' "${testDirspec}/" "$testSubject" "$what" \
@@ -96,7 +94,7 @@ then
     runTestsFor Make make --directory "${testDirspec}/" test
 fi
 
-if [ ! "$hasFoundTests" ]; then
+if [ -z "$status" ]; then
     if [ ! "$isCheck" ]; then
 	[ "$testDirspec" = . ] \
 	    && where='the current directory.' \
