@@ -17,11 +17,22 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Checkout scripting-testrunner dependencies
+    - name: Checkout scripting-testrunner dependency shell-filesystem
       uses: actions/checkout@v7
       with:
         repository: inkarkat/shell-filesystem
         path: .scripting-testrunner/shell-filesystem
+        sparse-checkout: |
+          bin/hasMatchingFile
+        sparse-checkout-cone-mode: false
+    - name: Checkout scripting-testrunner dependency shell-packages
+      uses: actions/checkout@v7
+      with:
+        repository: inkarkat/shell-packages
+        path: .scripting-testrunner/shell-packages
+        sparse-checkout: |
+          bin/versionCompare
+        sparse-checkout-cone-mode: false
     - name: Checkout dependencies
       env:
         INCLUDE_OPTIONAL_DEPENDENCIES: ${{ fromJSON(inputs.include-optional-dependencies) && 't' || '' }}
@@ -36,6 +47,7 @@ runs:
       run: |
         shopt -qs nullglob
         cp --force -- "${GITHUB_WORKSPACE}/.scripting-testrunner/shell-filesystem/bin/hasMatchingFile" "${GITHUB_ACTION_PATH}/bin"
+        cp --force -- "${GITHUB_WORKSPACE}/.scripting-testrunner/shell-packages/bin/versionCompare" "${GITHUB_ACTION_PATH}/bin"
 
         for dependencyPath in "${GITHUB_WORKSPACE}/dependencies"/*
         do

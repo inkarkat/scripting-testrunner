@@ -50,9 +50,18 @@ testSubject="${testSubject%/}"
 
 componentCount="${COMPONENT_COUNT:+ (}${COMPONENT_COUNT}${COMPONENT_COUNT:+)}"
 
+runBats()
+{
+    local failFastArg
+    [ "$isExitOnFailure" ] && versionCompare "$(bats --version)" -ge 1.13.0 \
+	&& failFastArg='--abort'
+    bats $failFastArg -r "${testDirspec}/"
+}
+
 runProve()
 (   # Note: Subshell here because of the chdir.
     cd "$testDirspec" || return 3
+    # Note: Prove doesn't have any flag to fail fast.
     prove -I.
 )
 
@@ -85,7 +94,7 @@ runTestsFor()
 }
 
 ! hasMatchingFile '*.bats' "${testDirspec}/" \
-    || runTestsFor Bats bats -r "${testDirspec}/"
+    || runTestsFor Bats runBats
 
 ! hasMatchingFile 'test*.py' "${testDirspec}/" \
     || runTestsFor Python python3 -m unittest discover --verbose ${isExitOnFailure:+--failfast} --start-directory "${testDirspec}/"
