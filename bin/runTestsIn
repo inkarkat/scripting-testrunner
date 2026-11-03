@@ -88,7 +88,7 @@ runTestsFor()
     || runTestsFor Bats bats -r "${testDirspec}/"
 
 ! hasMatchingFile 'test*.py' "${testDirspec}/" \
-    || runTestsFor Python python3 -m unittest discover --verbose --start-directory "${testDirspec}/"
+    || runTestsFor Python python3 -m unittest discover --verbose ${isExitOnFailure:+--failfast} --start-directory "${testDirspec}/"
 
 [ ! -d "${testDirspec}/t" ] \
     || runTestsFor Perl runProve
