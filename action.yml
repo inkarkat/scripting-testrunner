@@ -6,6 +6,11 @@ inputs:
     description: Flag whether to also clone and include in PATH dependencies marked as optional.
     required: false
     default: false
+  failfast:
+    description: Flag whether to stop the test run on the first failure.
+    required: false
+    default: true
+    type: boolean
   settings:
     description: Additional environment settings (in the form VAR=VALUE) to pass to the test runner.
     required: false
@@ -36,6 +41,7 @@ runs:
     - name: Checkout dependencies
       env:
         INCLUDE_OPTIONAL_DEPENDENCIES: ${{ fromJSON(inputs.include-optional-dependencies) && 't' || '' }}
+        FAILFAST: ${{ fromJSON(inputs.failfast) && 't' || '' }}
         INCLUDE_SUBMODULES: ${{ fromJSON(inputs.submodules) && 't' || '' }}
       run: |
         export PATH="${GITHUB_ACTION_PATH}/bin:${PATH}"
@@ -66,5 +72,5 @@ runs:
         EACHCOMPONENTDO_SETUP_PREFIX='::group::' \
         EACHCOMPONENTDO_SETUP_SUFFIX='::endgroup::' \
         ${{ inputs.settings }} \
-          runTests --exit-on-failure
+          runTests ${FAILFAST:+--exit-on-failure}
       shell: bash

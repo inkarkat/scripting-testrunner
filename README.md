@@ -20,6 +20,7 @@ The action assumes that the scripts-under-test are located in the `./bin` subdir
   uses: inkarkat/scripting-testrunner@master
   with:
     include-optional-dependencies: false
+    failfast: true
     settings: LC_ALL=C TZ=Etc/UTC
     submodules: false
 ```
